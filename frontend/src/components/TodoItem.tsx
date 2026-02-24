@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { Todo } from '@/types/todo'
 
 interface TodoItemProps {
@@ -11,6 +11,13 @@ interface TodoItemProps {
 export function TodoItem({ todo, onToggle, onEdit, onDelete }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(todo.title)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus()
+    }
+  }, [isEditing])
 
   const handleSave = () => {
     if (!editTitle.trim()) return
@@ -27,6 +34,7 @@ export function TodoItem({ todo, onToggle, onEdit, onDelete }: TodoItemProps) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', border: '1px solid #4a90e2', borderRadius: '4px', marginBottom: '8px' }}>
         <input
+          ref={inputRef}
           type="text"
           value={editTitle}
           onChange={(e) => setEditTitle(e.target.value)}
@@ -35,7 +43,6 @@ export function TodoItem({ todo, onToggle, onEdit, onDelete }: TodoItemProps) {
             if (e.key === 'Escape') handleCancel()
           }}
           style={{ flex: 1, padding: '4px 8px', fontSize: '14px' }}
-          autoFocus
         />
         <button onClick={handleSave}>저장</button>
         <button onClick={handleCancel}>취소</button>
