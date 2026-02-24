@@ -20,12 +20,12 @@ src/
     client.ts                 # Axios 인스턴스 (baseURL, 인터셉터 설정)
     todo.ts                   # Todo 도메인 API 함수 (getAll / getById / create / update / delete)
   store/
-    todoStore.ts              # Zustand 스토어 (todos, isLoading, fetchTodos, addTodo, toggleTodo, deleteTodo)
+    todoStore.ts              # Zustand 스토어 (todos, isLoading, fetchTodos, addTodo, toggleTodo, editTodo, deleteTodo)
   pages/
     TodoPage.tsx              # 할 일 목록 페이지
   components/
     TodoForm.tsx              # 할 일 입력 폼 컴포넌트
-    TodoItem.tsx              # 할 일 항목 컴포넌트 (체크박스 + 삭제 버튼)
+    TodoItem.tsx              # 할 일 항목 컴포넌트 (체크박스 + 수정 + 삭제 / 인라인 편집 모드 지원)
 ```
 
 # Axios 클라이언트 (`src/api/client.ts`)
@@ -51,6 +51,12 @@ VITE_API_URL=http://localhost:8080
 4. `src/components/` or `src/pages/` → UI 구현
    - 컴포넌트: named export 사용
    - 인터페이스는 파일 상단에 선언
+
+# TodoItem 편집 모드
+- "수정" 버튼 클릭 시 인라인 입력창으로 전환 (`isEditing` state)
+- `Enter` → 저장 / `Escape` → 취소
+- 편집 중에는 파란 테두리로 구분
+- 저장 시 `onEdit(id, title)` 호출 → `editTodo` 액션 → `PATCH /api/v1/todos/{id}` (body: `{ title }`)
 
 # 컴포넌트 작성 규칙
 - named export 사용 (`export function Foo`)

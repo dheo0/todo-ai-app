@@ -4,7 +4,7 @@ import { TodoForm } from '@/components/TodoForm'
 import { TodoItem } from '@/components/TodoItem'
 
 export function TodoPage() {
-  const { todos, isLoading, fetchTodos, addTodo, toggleTodo, deleteTodo } = useTodoStore()
+  const { todos, isLoading, fetchTodos, addTodo, toggleTodo, editTodo, deleteTodo } = useTodoStore()
 
   useEffect(() => {
     fetchTodos()
@@ -20,7 +20,12 @@ export function TodoPage() {
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {todos.map((todo) => (
             <li key={todo.id}>
-              <TodoItem todo={todo} onToggle={toggleTodo} onDelete={deleteTodo} />
+              <TodoItem
+                todo={todo}
+                onToggle={toggleTodo}
+                onEdit={editTodo}
+                onDelete={deleteTodo}
+              />
             </li>
           ))}
           {todos.length === 0 && <p>할 일이 없습니다.</p>}

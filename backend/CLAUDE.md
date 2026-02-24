@@ -6,7 +6,8 @@ JPA/Hibernate를 사용하지 않으며, `RestTemplate`으로 HTTP 호출한다.
 # 기술 스택
 - Java 22 / Spring Boot 3.2.3 / Gradle 8.10.2 (Groovy DSL)
 - spring-boot-starter-web, spring-boot-starter-validation, Lombok
-- DB 연동: Supabase REST API (`RestTemplate`)
+- DB 연동: Supabase REST API (`RestTemplate` + Apache HttpClient 5)
+- httpclient5: PATCH 메서드 지원을 위해 필수 (기본 HttpURLConnection은 PATCH 미지원)
 
 # 패키지 구조
 ```
@@ -17,7 +18,7 @@ com.example.todoapp/
       ApiResponse.java          # 공통 응답 래퍼 { success, data, message }
     config/
       SupabaseProperties.java   # @ConfigurationProperties(prefix="supabase")
-      SupabaseConfig.java       # RestTemplate Bean 등록 + @EnableConfigurationProperties
+      SupabaseConfig.java       # RestTemplate Bean 등록 (HttpComponentsClientHttpRequestFactory 사용) + @EnableConfigurationProperties
     exception/
       TodoNotFoundException.java      # RuntimeException 상속
       GlobalExceptionHandler.java     # @RestControllerAdvice
@@ -33,6 +34,10 @@ com.example.todoapp/
     controller/
       TodoController.java       # /api/v1/todos REST 엔드포인트
 ```
+
+# 주의사항
+- `RestTemplate`은 반드시 `HttpComponentsClientHttpRequestFactory`로 생성해야 한다.
+  기본 `HttpURLConnection`은 PATCH를 지원하지 않아 toggle/수정 API 호출 시 예외가 발생한다.
 
 # Supabase REST API 연동 방식
 - `TodoService`가 `RestTemplate`으로 Supabase PostgREST 엔드포인트를 직접 호출한다.

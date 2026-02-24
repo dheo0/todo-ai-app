@@ -8,6 +8,7 @@ interface TodoStore {
   fetchTodos: () => Promise<void>
   addTodo: (title: string) => Promise<void>
   toggleTodo: (id: string, completed: boolean) => Promise<void>
+  editTodo: (id: string, title: string) => Promise<void>
   deleteTodo: (id: string) => Promise<void>
 }
 
@@ -28,6 +29,13 @@ export const useTodoStore = create<TodoStore>((set) => ({
 
   toggleTodo: async (id, completed) => {
     const res = await todoApi.update(id, { completed: !completed })
+    set((state) => ({
+      todos: state.todos.map((t) => (t.id === id ? res.data.data : t)),
+    }))
+  },
+
+  editTodo: async (id, title) => {
+    const res = await todoApi.update(id, { title })
     set((state) => ({
       todos: state.todos.map((t) => (t.id === id ? res.data.data : t)),
     }))
