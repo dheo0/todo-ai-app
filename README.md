@@ -120,7 +120,7 @@ npm run dev            # http://localhost:5173
 
 ---
 
-## 백엔드 구조
+## 백엔드 구조 ([CLAUDE.md](backend/CLAUDE.md))
 
 ```
 src/main/java/com/example/todoapp/
@@ -141,7 +141,7 @@ src/main/java/com/example/todoapp/
 
 ---
 
-## 프론트엔드 구조
+## 프론트엔드 구조 ([CLAUDE.md](frontend/CLAUDE.md))
 
 ```
 src/
