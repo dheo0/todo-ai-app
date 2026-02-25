@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
 import { TodoPage } from '@/pages/TodoPage'
 import { LoginPage } from '@/pages/LoginPage'
-import { RegisterPage } from '@/pages/RegisterPage'
+// import { RegisterPage } from '@/pages/RegisterPage'  // 이메일 인증 비활성화
 import { PrivateRoute } from '@/router/PrivateRoute'
 
 const theme = createTheme({
@@ -18,7 +18,7 @@ function App() {
       <CssBaseline />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* <Route path="/register" element={<RegisterPage />} /> */}
         <Route
           path="/"
           element={

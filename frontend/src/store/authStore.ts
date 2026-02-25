@@ -1,13 +1,11 @@
 import { create } from 'zustand'
-import { authApi } from '@/api/auth'
-import type { AuthResponse, LoginRequest, SignupRequest } from '@/types/auth'
+import type { SocialProvider } from '@/types/auth'
 
 interface AuthStore {
   userId: string | null
   email: string | null
   isAuthenticated: boolean
-  signup: (body: SignupRequest) => Promise<AuthResponse>
-  login: (body: LoginRequest) => Promise<void>
+  socialLogin: (provider: SocialProvider) => void
   logout: () => void
 }
 
@@ -21,7 +19,7 @@ function parseJwt(token: string): { sub: string; email: string } | null {
   }
 }
 
-// 이메일 확인 링크 클릭 후 리다이렉트 시 URL 해시에서 access_token 추출
+// 이메일 확인 링크 or 소셜 로그인 리다이렉트 시 URL 해시에서 access_token 추출
 // Supabase가 http://localhost:5173/#access_token=xxx&type=signup 형태로 리다이렉트
 const hash = window.location.hash.substring(1)
 const hashParams = new URLSearchParams(hash)
@@ -36,10 +34,11 @@ if (hashToken) {
   if (payload) {
     initialToken = hashToken
     initialUserId = payload.sub
-    initialEmail = payload.email
+    // 카카오 등 이메일이 없는 제공자 대비 fallback
+    initialEmail = payload.email || payload.sub.substring(0, 8)
     localStorage.setItem('accessToken', hashToken)
     localStorage.setItem('userId', payload.sub)
-    localStorage.setItem('email', payload.email)
+    localStorage.setItem('email', initialEmail)
     // URL에서 해시 제거 (토큰 노출 방지)
     window.history.replaceState({}, '', window.location.pathname)
   }
@@ -49,6 +48,30 @@ export const useAuthStore = create<AuthStore>((set) => ({
   userId: initialUserId,
   email: initialEmail,
   isAuthenticated: !!(initialToken && initialUserId && initialEmail),
+
+  socialLogin: (provider) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const redirectTo = window.location.origin
+    window.location.href = `${supabaseUrl}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectTo)}`
+  },
+
+  logout: () => {
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('userId')
+    localStorage.removeItem('email')
+    set({ userId: null, email: null, isAuthenticated: false })
+  },
+}))
+
+/* 이메일/비밀번호 인증 (소셜 로그인으로 대체됨 - 필요 시 주석 해제)
+import { authApi } from '@/api/auth'
+import type { AuthResponse, LoginRequest, SignupRequest } from '@/types/auth'
+
+interface AuthStore {
+  ...
+  signup: (body: SignupRequest) => Promise<AuthResponse>
+  login: (body: LoginRequest) => Promise<void>
+}
 
   signup: async (body) => {
     const res = await authApi.signup(body)
@@ -70,11 +93,4 @@ export const useAuthStore = create<AuthStore>((set) => ({
     localStorage.setItem('email', email)
     set({ userId, email, isAuthenticated: true })
   },
-
-  logout: () => {
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('userId')
-    localStorage.removeItem('email')
-    set({ userId: null, email: null, isAuthenticated: false })
-  },
-}))
+*/

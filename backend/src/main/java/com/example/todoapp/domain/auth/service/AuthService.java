@@ -28,6 +28,7 @@ public class AuthService {
         return headers;
     }
 
+    /* 이메일/비밀번호 인증 (소셜 로그인으로 대체됨 - 필요 시 주석 해제)
     public AuthResponse signup(SignupRequest request) {
         String url = supabaseProperties.url() + "/auth/v1/signup";
         Map<String, String> body = new HashMap<>();
@@ -46,7 +47,8 @@ public class AuthService {
                     raw.accessToken(), raw.tokenType(), raw.expiresIn(),
                     raw.user().id(), raw.user().email(), false);
         } catch (HttpClientErrorException e) {
-            throw new RuntimeException("회원가입 실패: 이미 사용 중인 이메일이거나 잘못된 요청입니다.");
+            // Supabase 실제 에러 메시지를 그대로 전달 (디버깅용)
+            throw new RuntimeException("[Supabase " + e.getStatusCode() + "] " + e.getResponseBodyAsString());
         }
     }
 
@@ -69,4 +71,5 @@ public class AuthService {
             throw new RuntimeException("로그인 실패: 이메일 또는 비밀번호를 확인해주세요.");
         }
     }
+    */
 }
