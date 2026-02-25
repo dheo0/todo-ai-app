@@ -18,8 +18,12 @@ export const useTodoStore = create<TodoStore>((set) => ({
 
   fetchTodos: async () => {
     set({ isLoading: true })
-    const res = await todoApi.getAll()
-    set({ todos: res.data.data, isLoading: false })
+    try {
+      const res = await todoApi.getAll()
+      set({ todos: res.data.data })
+    } finally {
+      set({ isLoading: false })
+    }
   },
 
   addTodo: async (title) => {
