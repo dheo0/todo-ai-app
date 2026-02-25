@@ -15,21 +15,50 @@ React 18 + TypeScript + Vite 기반 SPA.
 # 파일 구조
 ```
 src/
+  vite-env.d.ts               # import.meta.env 타입 선언 (/// <reference types="vite/client" />)
   main.tsx                    # 진입점
-  App.tsx                     # 루트 컴포넌트 — ThemeProvider + CssBaseline 감싸고 TodoPage 렌더링
+  App.tsx                     # 루트 컴포넌트 — ThemeProvider + CssBaseline + 라우트 정의
   types/
     todo.ts                   # Todo, TodoCreateRequest, TodoUpdateRequest 인터페이스
+    auth.ts                   # AuthResponse, SignupRequest, LoginRequest, SocialProvider 타입
   api/
     client.ts                 # Axios 인스턴스 (baseURL, 인터셉터 설정)
     todo.ts                   # Todo 도메인 API 함수 (getAll / getById / create / update / delete)
+    auth.ts                   # Auth API 함수 (signup / login)
   store/
     todoStore.ts              # Zustand 스토어 (todos, isLoading, fetchTodos, addTodo, toggleTodo, editTodo, deleteTodo)
+    authStore.ts              # Zustand 스토어 (userId, email, isAuthenticated, login, signup, logout, socialLogin)
   pages/
-    TodoPage.tsx              # 할 일 목록 페이지
+    TodoPage.tsx              # 할 일 목록 페이지 (인증 필요)
+    LoginPage.tsx             # 로그인 페이지 (이메일/비밀번호 + 카카오/Google 소셜 로그인)
+    RegisterPage.tsx          # 회원가입 페이지
+  router/
+    PrivateRoute.tsx          # 인증 여부 확인 후 미인증 시 /login으로 리다이렉트
   components/
     TodoForm.tsx              # 할 일 입력 폼 (MUI TextField + Button + AddIcon)
     TodoItem.tsx              # 할 일 항목 (MUI Checkbox, ListItem, IconButton + Tooltip / 인라인 편집 모드 지원)
 ```
+
+# 인증 흐름
+
+## 이메일/비밀번호 로그인
+1. `LoginPage` → `authStore.login()` → `POST /api/v1/auth/login` (백엔드 경유)
+2. 응답에서 `accessToken`, `userId`, `email` → `localStorage` 저장 + Zustand 상태 갱신
+3. `navigate('/')` → `PrivateRoute` 통과 → `TodoPage` 렌더링
+
+## 소셜 로그인 (카카오 / Google)
+- **SDK 미사용**, Supabase OAuth implicit flow 직접 활용
+1. `authStore.socialLogin(provider)` → `VITE_SUPABASE_URL/auth/v1/authorize?provider=...` 로 리다이렉트
+2. OAuth 완료 후 `http://localhost:5173/#access_token=xxx` 로 복귀
+3. `authStore.ts` 모듈 초기화 시 URL 해시에서 토큰 자동 추출, localStorage 저장, 해시 제거
+4. `isAuthenticated: true` → `PrivateRoute` 통과 → `TodoPage` 렌더링
+- 이메일을 제공하지 않는 공급자 대비: `payload.email || 'user-' + payload.sub.substring(0, 8)` 폴백 처리
+
+## 로그아웃
+`authStore.logout()` → localStorage 전체 제거 + Zustand 초기화 → `/login`으로 이동
+
+## 토큰 만료/미인증 처리
+Axios 응답 인터셉터: 401 응답 시 localStorage에서 `accessToken` 제거 후 `/login`으로 이동
 
 # Axios 클라이언트 (`src/api/client.ts`)
 - `baseURL`: `import.meta.env.VITE_API_URL`
@@ -43,9 +72,16 @@ src/
 # 환경변수 (.env)
 ```
 VITE_API_URL=http://localhost:8080
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 ```
 - `.env`는 커밋 금지. `.env.example` 참고.
 - Vite 환경변수는 반드시 `VITE_` 접두사 사용.
+- `VITE_SUPABASE_URL`: 소셜 로그인 OAuth URL 생성에 사용 (authStore.socialLogin)
+
+# 소셜 로그인 Supabase 설정 (최초 1회)
+1. Supabase 대시보드 → Authentication → Providers에서 각 공급자 활성화
+2. 각 공급자 콘솔에서 Redirect URI를 `https://<project>.supabase.co/auth/v1/callback`로 등록
+3. Supabase → Authentication → URL Configuration → Redirect URLs에 `http://localhost:5173` 추가
 
 # 새 기능 추가 순서
 1. `src/types/` → TypeScript 타입 정의
@@ -64,6 +100,7 @@ VITE_API_URL=http://localhost:8080
 - 리스트 항목: `ListItem` + `ListItemText` + `Divider` 조합 사용.
 - 버튼은 아이콘 전용일 경우 `IconButton`, 텍스트 포함 시 `Button` 사용.
 - 호버 설명은 `Tooltip`으로 제공한다.
+- 커스텀 SVG 아이콘은 MUI `SvgIcon`으로 감싸서 사용한다.
 
 # TodoItem 편집 모드
 - MUI `EditIcon` 버튼 클릭 시 인라인 `TextField`로 전환 (`isEditing` state)
