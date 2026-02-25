@@ -25,8 +25,8 @@ export function TodoPage() {
     fetchTodos()
   }, [fetchTodos])
 
-  const handleLogout = async () => {
-    await logout()
+  const handleLogout = () => {
+    logout()
     navigate('/login')
   }
 
@@ -66,7 +66,7 @@ export function TodoPage() {
             <>
               {todos.length === 0 ? (
                 <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-                  할 일을 등록해 주세요
+                  할 일이 없습니다. 새로운 할 일을 추가해보세요!
                 </Typography>
               ) : (
                 <List disablePadding>
