@@ -25,8 +25,8 @@ export function TodoPage() {
     fetchTodos()
   }, [fetchTodos])
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     navigate('/login')
   }
 
