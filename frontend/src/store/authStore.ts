@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { authApi } from '@/api/auth'
-import type { AuthResponse, LoginRequest, SignupRequest } from '@/types/auth'
+import type { AuthResponse, LoginRequest, SignupRequest, SocialProvider } from '@/types/auth'
 
 interface AuthStore {
   userId: string | null
@@ -9,6 +9,7 @@ interface AuthStore {
   signup: (body: SignupRequest) => Promise<AuthResponse>
   login: (body: LoginRequest) => Promise<void>
   logout: () => void
+  socialLogin: (provider: SocialProvider) => void
 }
 
 // JWT payload 디코딩 (서명 검증 없음 - 프론트엔드 표시용)
@@ -36,10 +37,10 @@ if (hashToken) {
   if (payload) {
     initialToken = hashToken
     initialUserId = payload.sub
-    initialEmail = payload.email
+    initialEmail = payload.email || `user-${payload.sub.substring(0, 8)}`
     localStorage.setItem('accessToken', hashToken)
     localStorage.setItem('userId', payload.sub)
-    localStorage.setItem('email', payload.email)
+    localStorage.setItem('email', payload.email || `user-${payload.sub.substring(0, 8)}`)
     // URL에서 해시 제거 (토큰 노출 방지)
     window.history.replaceState({}, '', window.location.pathname)
   }
@@ -76,5 +77,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
     localStorage.removeItem('userId')
     localStorage.removeItem('email')
     set({ userId: null, email: null, isAuthenticated: false })
+  },
+
+  socialLogin: (provider) => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const redirectTo = window.location.origin
+    window.location.href = `${supabaseUrl}/auth/v1/authorize?provider=${provider}&redirect_to=${encodeURIComponent(redirectTo)}`
   },
 }))
