@@ -1,4 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
+import {
+  Box,
+  Checkbox,
+  Divider,
+  IconButton,
+  ListItem,
+  ListItemText,
+  TextField,
+  Tooltip,
+} from '@mui/material'
+import CheckIcon from '@mui/icons-material/Check'
+import CloseIcon from '@mui/icons-material/Close'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
 import type { Todo } from '@/types/todo'
 
 interface TodoItemProps {
@@ -30,38 +44,66 @@ export function TodoItem({ todo, onToggle, onEdit, onDelete }: TodoItemProps) {
     setIsEditing(false)
   }
 
-  if (isEditing) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', border: '1px solid #4a90e2', borderRadius: '4px', marginBottom: '8px' }}>
-        <input
-          ref={inputRef}
-          type="text"
-          value={editTitle}
-          onChange={(e) => setEditTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSave()
-            if (e.key === 'Escape') handleCancel()
-          }}
-          style={{ flex: 1, padding: '4px 8px', fontSize: '14px' }}
-        />
-        <button onClick={handleSave}>저장</button>
-        <button onClick={handleCancel}>취소</button>
-      </div>
-    )
-  }
-
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px', border: '1px solid #ddd', borderRadius: '4px', marginBottom: '8px' }}>
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={() => onToggle(todo.id, todo.completed)}
-      />
-      <span style={{ flex: 1, textDecoration: todo.completed ? 'line-through' : 'none' }}>
-        {todo.title}
-      </span>
-      <button onClick={() => setIsEditing(true)}>수정</button>
-      <button onClick={() => onDelete(todo.id)} style={{ color: 'red' }}>삭제</button>
-    </div>
+    <>
+      <ListItem disablePadding sx={{ py: 0.5 }}>
+        {isEditing ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%', py: 0.5 }}>
+            <TextField
+              inputRef={inputRef}
+              fullWidth
+              size="small"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave()
+                if (e.key === 'Escape') handleCancel()
+              }}
+            />
+            <Tooltip title="저장">
+              <IconButton color="primary" size="small" onClick={handleSave}>
+                <CheckIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="취소">
+              <IconButton size="small" onClick={handleCancel}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ) : (
+          <>
+            <Checkbox
+              checked={todo.completed}
+              onChange={() => onToggle(todo.id, todo.completed)}
+              color="primary"
+              size="small"
+            />
+            <ListItemText
+              primary={todo.title}
+              slotProps={{
+                primary: {
+                  sx: {
+                    textDecoration: todo.completed ? 'line-through' : 'none',
+                    color: todo.completed ? 'text.disabled' : 'text.primary',
+                  },
+                },
+              }}
+            />
+            <Tooltip title="수정">
+              <IconButton size="small" onClick={() => setIsEditing(true)}>
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="삭제">
+              <IconButton size="small" color="error" onClick={() => onDelete(todo.id)}>
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </>
+        )}
+      </ListItem>
+      <Divider component="li" />
+    </>
   )
 }

@@ -7,13 +7,16 @@ React 18 + TypeScript + Vite 기반 SPA.
 - React 18 / TypeScript 5 / Vite 5
 - Zustand 4 (전역 상태 관리)
 - Axios 1 (HTTP 클라이언트)
+- MUI (Material UI) v6 — UI 컴포넌트 라이브러리
+  - `@mui/material`, `@mui/icons-material`
+  - `@emotion/react`, `@emotion/styled` (MUI 스타일링 엔진)
 - 테스트: Vitest
 
 # 파일 구조
 ```
 src/
   main.tsx                    # 진입점
-  App.tsx                     # 루트 컴포넌트 (현재 TodoPage 렌더링)
+  App.tsx                     # 루트 컴포넌트 — ThemeProvider + CssBaseline 감싸고 TodoPage 렌더링
   types/
     todo.ts                   # Todo, TodoCreateRequest, TodoUpdateRequest 인터페이스
   api/
@@ -24,8 +27,8 @@ src/
   pages/
     TodoPage.tsx              # 할 일 목록 페이지
   components/
-    TodoForm.tsx              # 할 일 입력 폼 컴포넌트
-    TodoItem.tsx              # 할 일 항목 컴포넌트 (체크박스 + 수정 + 삭제 / 인라인 편집 모드 지원)
+    TodoForm.tsx              # 할 일 입력 폼 (MUI TextField + Button + AddIcon)
+    TodoItem.tsx              # 할 일 항목 (MUI Checkbox, ListItem, IconButton + Tooltip / 인라인 편집 모드 지원)
 ```
 
 # Axios 클라이언트 (`src/api/client.ts`)
@@ -52,10 +55,19 @@ VITE_API_URL=http://localhost:8080
    - 컴포넌트: named export 사용
    - 인터페이스는 파일 상단에 선언
 
+# MUI 사용 규칙
+- `App.tsx`에서 `ThemeProvider` + `CssBaseline`으로 전체 앱을 감싼다.
+- 테마는 `createTheme`으로 생성하며 `App.tsx`에서 중앙 관리한다.
+- 아이콘은 `@mui/icons-material`에서 named import로 사용한다.
+  예) `import AddIcon from '@mui/icons-material/Add'`
+- 레이아웃: `Box`, `Container` 사용 / 스타일은 `sx` prop으로 지정한다.
+- 리스트 항목: `ListItem` + `ListItemText` + `Divider` 조합 사용.
+- 버튼은 아이콘 전용일 경우 `IconButton`, 텍스트 포함 시 `Button` 사용.
+- 호버 설명은 `Tooltip`으로 제공한다.
+
 # TodoItem 편집 모드
-- "수정" 버튼 클릭 시 인라인 입력창으로 전환 (`isEditing` state)
-- `Enter` → 저장 / `Escape` → 취소
-- 편집 중에는 파란 테두리로 구분
+- MUI `EditIcon` 버튼 클릭 시 인라인 `TextField`로 전환 (`isEditing` state)
+- `Enter` → 저장(`CheckIcon`) / `Escape` → 취소(`CloseIcon`)
 - 저장 시 `onEdit(id, title)` 호출 → `editTodo` 액션 → `PATCH /api/v1/todos/{id}` (body: `{ title }`)
 
 # 컴포넌트 작성 규칙

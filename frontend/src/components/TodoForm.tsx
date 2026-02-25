@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Box, Button, TextField } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 
 interface TodoFormProps {
   onAdd: (title: string) => void
@@ -15,17 +17,27 @@ export function TodoForm({ onAdd }: TodoFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-      <input
-        type="text"
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ display: 'flex', gap: 1, mb: 2 }}
+    >
+      <TextField
+        fullWidth
+        size="small"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="할 일을 입력하세요"
-        style={{ flex: 1, padding: '8px', fontSize: '14px' }}
+        variant="outlined"
       />
-      <button type="submit" style={{ padding: '8px 16px' }}>
+      <Button
+        type="submit"
+        variant="contained"
+        startIcon={<AddIcon />}
+        sx={{ whiteSpace: 'nowrap' }}
+      >
         추가
-      </button>
-    </form>
+      </Button>
+    </Box>
   )
 }
