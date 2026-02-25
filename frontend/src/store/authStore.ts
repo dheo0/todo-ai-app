@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { createClient } from '@supabase/supabase-js'
 import type { SocialProvider } from '@/types/auth'
 
-const supabase = createClient(
+export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_ANON_KEY,
 )
@@ -17,23 +17,14 @@ interface AuthStore {
 }
 
 export const useAuthStore = create<AuthStore>((set) => {
-  // 앱 시작 시 현재 세션 확인 + 인증 상태 변화 구독
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    if (session) {
-      localStorage.setItem('accessToken', session.access_token)
-      set({
-        userId: session.user.id,
-        email: session.user.email ?? session.user.id.substring(0, 8),
-        isAuthenticated: true,
-        isInitialized: true,
-      })
-    } else {
-      localStorage.removeItem('accessToken')
-      set({ isInitialized: true })
+  supabase.auth.onAuthStateChange((event, session) => {
+    // PKCE 코드 교환 중: URL에 ?code=가 있고 INITIAL_SESSION에서 세션이 없으면
+    // 코드 교환이 완료될 때까지 초기화를 보류한다
+    const hasCode = new URLSearchParams(window.location.search).has('code')
+    if (event === 'INITIAL_SESSION' && !session && hasCode) {
+      return
     }
-  })
 
-  supabase.auth.onAuthStateChange((_event, session) => {
     if (session) {
       localStorage.setItem('accessToken', session.access_token)
       set({
@@ -70,9 +61,6 @@ export const useAuthStore = create<AuthStore>((set) => {
 })
 
 /* 이메일/비밀번호 인증 (소셜 로그인으로 대체됨 - 필요 시 주석 해제)
-import { authApi } from '@/api/auth'
-import type { AuthResponse, LoginRequest, SignupRequest } from '@/types/auth'
-
   signup: async (body) => { ... },
   login: async (body) => { ... },
 */
