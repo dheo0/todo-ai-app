@@ -36,7 +36,15 @@ public class AuthService {
         try {
             ResponseEntity<SupabaseAuthResponse> response = restTemplate.exchange(
                     url, HttpMethod.POST, new HttpEntity<>(body, anonHeaders()), SupabaseAuthResponse.class);
-            return toAuthResponse(response.getBody());
+            SupabaseAuthResponse raw = response.getBody();
+
+            // access_token이 없으면 이메일 확인이 필요한 경우 (Supabase 이메일 인증 활성화 상태)
+            if (raw == null || raw.accessToken() == null) {
+                return new AuthResponse(null, null, 0, null, request.email(), true);
+            }
+            return new AuthResponse(
+                    raw.accessToken(), raw.tokenType(), raw.expiresIn(),
+                    raw.user().id(), raw.user().email(), false);
         } catch (HttpClientErrorException e) {
             throw new RuntimeException("회원가입 실패: 이미 사용 중인 이메일이거나 잘못된 요청입니다.");
         }
@@ -50,22 +58,15 @@ public class AuthService {
         try {
             ResponseEntity<SupabaseAuthResponse> response = restTemplate.exchange(
                     url, HttpMethod.POST, new HttpEntity<>(body, anonHeaders()), SupabaseAuthResponse.class);
-            return toAuthResponse(response.getBody());
+            SupabaseAuthResponse raw = response.getBody();
+            if (raw == null || raw.user() == null) {
+                throw new RuntimeException("로그인 응답을 처리할 수 없습니다.");
+            }
+            return new AuthResponse(
+                    raw.accessToken(), raw.tokenType(), raw.expiresIn(),
+                    raw.user().id(), raw.user().email(), false);
         } catch (HttpClientErrorException e) {
             throw new RuntimeException("로그인 실패: 이메일 또는 비밀번호를 확인해주세요.");
         }
-    }
-
-    private AuthResponse toAuthResponse(SupabaseAuthResponse raw) {
-        if (raw == null || raw.user() == null) {
-            throw new RuntimeException("인증 응답이 없습니다. 이메일 인증이 필요할 수 있습니다.");
-        }
-        return new AuthResponse(
-                raw.accessToken(),
-                raw.tokenType(),
-                raw.expiresIn(),
-                raw.user().id(),
-                raw.user().email()
-        );
     }
 }

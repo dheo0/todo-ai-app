@@ -1,9 +1,10 @@
 export interface AuthResponse {
-  accessToken: string
-  tokenType: string
+  accessToken: string | null
+  tokenType: string | null
   expiresIn: number
-  userId: string
+  userId: string | null
   email: string
+  needsEmailConfirmation: boolean
 }
 
 export interface SignupRequest {

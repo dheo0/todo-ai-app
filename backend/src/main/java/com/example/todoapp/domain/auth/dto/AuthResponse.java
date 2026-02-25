@@ -5,5 +5,6 @@ public record AuthResponse(
         String tokenType,
         int expiresIn,
         String userId,
-        String email
+        String email,
+        boolean needsEmailConfirmation
 ) {}
