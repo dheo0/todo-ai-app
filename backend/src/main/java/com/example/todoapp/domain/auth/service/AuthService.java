@@ -1,0 +1,71 @@
+package com.example.todoapp.domain.auth.service;
+
+import com.example.todoapp.domain.auth.dto.AuthResponse;
+import com.example.todoapp.domain.auth.dto.LoginRequest;
+import com.example.todoapp.domain.auth.dto.SignupRequest;
+import com.example.todoapp.domain.auth.dto.SupabaseAuthResponse;
+import com.example.todoapp.global.config.SupabaseProperties;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+
+    private final RestTemplate restTemplate;
+    private final SupabaseProperties supabaseProperties;
+
+    private HttpHeaders anonHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("apikey", supabaseProperties.anonKey());
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return headers;
+    }
+
+    public AuthResponse signup(SignupRequest request) {
+        String url = supabaseProperties.url() + "/auth/v1/signup";
+        Map<String, String> body = new HashMap<>();
+        body.put("email", request.email());
+        body.put("password", request.password());
+        try {
+            ResponseEntity<SupabaseAuthResponse> response = restTemplate.exchange(
+                    url, HttpMethod.POST, new HttpEntity<>(body, anonHeaders()), SupabaseAuthResponse.class);
+            return toAuthResponse(response.getBody());
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("회원가입 실패: 이미 사용 중인 이메일이거나 잘못된 요청입니다.");
+        }
+    }
+
+    public AuthResponse login(LoginRequest request) {
+        String url = supabaseProperties.url() + "/auth/v1/token?grant_type=password";
+        Map<String, String> body = new HashMap<>();
+        body.put("email", request.email());
+        body.put("password", request.password());
+        try {
+            ResponseEntity<SupabaseAuthResponse> response = restTemplate.exchange(
+                    url, HttpMethod.POST, new HttpEntity<>(body, anonHeaders()), SupabaseAuthResponse.class);
+            return toAuthResponse(response.getBody());
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("로그인 실패: 이메일 또는 비밀번호를 확인해주세요.");
+        }
+    }
+
+    private AuthResponse toAuthResponse(SupabaseAuthResponse raw) {
+        if (raw == null || raw.user() == null) {
+            throw new RuntimeException("인증 응답이 없습니다. 이메일 인증이 필요할 수 있습니다.");
+        }
+        return new AuthResponse(
+                raw.accessToken(),
+                raw.tokenType(),
+                raw.expiresIn(),
+                raw.user().id(),
+                raw.user().email()
+        );
+    }
+}

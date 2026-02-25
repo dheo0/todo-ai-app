@@ -9,9 +9,19 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedException e) {
+        return ResponseEntity.status(401).body(ApiResponse.fail(e.getMessage()));
+    }
+
     @ExceptionHandler(TodoNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(TodoNotFoundException e) {
         return ResponseEntity.status(404).body(ApiResponse.fail(e.getMessage()));
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRuntimeException(RuntimeException e) {
+        return ResponseEntity.status(400).body(ApiResponse.fail(e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

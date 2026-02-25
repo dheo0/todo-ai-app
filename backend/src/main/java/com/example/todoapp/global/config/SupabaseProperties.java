@@ -6,5 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record SupabaseProperties(
         String url,
         String serviceRoleKey,
-        String anonKey
+        String anonKey,
+        String jwtSecret
 ) {}

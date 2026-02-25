@@ -20,30 +20,38 @@ public class TodoController {
     private final TodoService todoService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TodoResponse>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.ok(todoService.getAll()));
+    public ResponseEntity<ApiResponse<List<TodoResponse>>> getAll(
+            @RequestAttribute("userId") String userId) {
+        return ResponseEntity.ok(ApiResponse.ok(todoService.getAll(userId)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<TodoResponse>> getById(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.ok(todoService.getById(id)));
+    public ResponseEntity<ApiResponse<TodoResponse>> getById(
+            @PathVariable String id,
+            @RequestAttribute("userId") String userId) {
+        return ResponseEntity.ok(ApiResponse.ok(todoService.getById(id, userId)));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TodoResponse>> create(@Valid @RequestBody TodoCreateRequest request) {
-        return ResponseEntity.status(201).body(ApiResponse.ok(todoService.create(request)));
+    public ResponseEntity<ApiResponse<TodoResponse>> create(
+            @Valid @RequestBody TodoCreateRequest request,
+            @RequestAttribute("userId") String userId) {
+        return ResponseEntity.status(201).body(ApiResponse.ok(todoService.create(request, userId)));
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<ApiResponse<TodoResponse>> update(
             @PathVariable String id,
-            @RequestBody TodoUpdateRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(todoService.update(id, request)));
+            @RequestBody TodoUpdateRequest request,
+            @RequestAttribute("userId") String userId) {
+        return ResponseEntity.ok(ApiResponse.ok(todoService.update(id, request, userId)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        todoService.delete(id);
+    public ResponseEntity<Void> delete(
+            @PathVariable String id,
+            @RequestAttribute("userId") String userId) {
+        todoService.delete(id, userId);
         return ResponseEntity.noContent().build();
     }
 }

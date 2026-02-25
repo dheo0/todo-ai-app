@@ -32,9 +32,9 @@ public class TodoService {
         return headers;
     }
 
-    public List<TodoResponse> getAll() {
+    public List<TodoResponse> getAll(String userId) {
         ResponseEntity<Todo[]> response = restTemplate.exchange(
-                baseUrl() + "?select=*",
+                baseUrl() + "?user_id=eq." + userId + "&select=*",
                 HttpMethod.GET,
                 new HttpEntity<>(headers()),
                 Todo[].class
@@ -44,9 +44,9 @@ public class TodoService {
         return Arrays.stream(todos).map(TodoResponse::from).toList();
     }
 
-    public TodoResponse getById(String id) {
+    public TodoResponse getById(String id, String userId) {
         ResponseEntity<Todo[]> response = restTemplate.exchange(
-                baseUrl() + "?id=eq." + id + "&select=*",
+                baseUrl() + "?id=eq." + id + "&user_id=eq." + userId + "&select=*",
                 HttpMethod.GET,
                 new HttpEntity<>(headers()),
                 Todo[].class
@@ -58,12 +58,13 @@ public class TodoService {
         return TodoResponse.from(todos[0]);
     }
 
-    public TodoResponse create(TodoCreateRequest request) {
+    public TodoResponse create(TodoCreateRequest request, String userId) {
         HttpHeaders headers = headers();
         headers.set("Prefer", "return=representation");
 
         Map<String, Object> body = new HashMap<>();
         body.put("title", request.title());
+        body.put("user_id", userId);
 
         ResponseEntity<Todo[]> response = restTemplate.exchange(
                 baseUrl(),
@@ -74,8 +75,8 @@ public class TodoService {
         return TodoResponse.from(Objects.requireNonNull(response.getBody())[0]);
     }
 
-    public TodoResponse update(String id, TodoUpdateRequest request) {
-        getById(id); // 존재 여부 확인 (없으면 TodoNotFoundException)
+    public TodoResponse update(String id, TodoUpdateRequest request, String userId) {
+        getById(id, userId); // 소유권 검증
 
         HttpHeaders headers = headers();
         headers.set("Prefer", "return=representation");
@@ -85,7 +86,7 @@ public class TodoService {
         if (request.completed() != null) body.put("completed", request.completed());
 
         ResponseEntity<Todo[]> response = restTemplate.exchange(
-                baseUrl() + "?id=eq." + id,
+                baseUrl() + "?id=eq." + id + "&user_id=eq." + userId,
                 HttpMethod.PATCH,
                 new HttpEntity<>(body, headers),
                 Todo[].class
@@ -93,11 +94,11 @@ public class TodoService {
         return TodoResponse.from(Objects.requireNonNull(response.getBody())[0]);
     }
 
-    public void delete(String id) {
-        getById(id); // 존재 여부 확인 (없으면 TodoNotFoundException)
+    public void delete(String id, String userId) {
+        getById(id, userId); // 소유권 검증
 
         restTemplate.exchange(
-                baseUrl() + "?id=eq." + id,
+                baseUrl() + "?id=eq." + id + "&user_id=eq." + userId,
                 HttpMethod.DELETE,
                 new HttpEntity<>(headers()),
                 Void.class
