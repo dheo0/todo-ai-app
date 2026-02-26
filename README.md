@@ -9,10 +9,20 @@
 | 영역 | 기술 |
 |------|------|
 | 백엔드 | Java 22 / Spring Boot 3.2.3 / Gradle 8.10.2 |
-| 프론트엔드 | React 18 / TypeScript 5 / Vite 5 |
-| 상태 관리 | Zustand 4 |
-| HTTP 클라이언트 | Axios (프론트) / RestTemplate + Apache HttpClient 5 (백엔드) |
-| DB | Supabase (PostgreSQL) — REST API 방식 연동 |
+| 프론트엔드 | React 18 / TypeScript 5 / Vite 5 / Zustand 4 / MUI 7 |
+| DB / Auth | Supabase (PostgreSQL + Auth) |
+| HTTP 클라이언트 | RestTemplate + Apache HttpClient 5 (백엔드) / hey-api/client-axios 자동 생성 (프론트) |
+| API 문서 | Springdoc OpenAPI 2.3.0 (Swagger UI) |
+
+---
+
+## 구현 기능
+
+- **이메일/비밀번호** 회원가입 · 로그인
+- **소셜 로그인** — 카카오, Google (Supabase OAuth)
+- **Todo CRUD** — 생성 / 조회 / 인라인 수정 / 완료 토글 / 삭제
+- **사용자별 데이터 분리** — JWT 기반 인증, userId 필터
+- **Swagger UI** — `http://localhost:8080/swagger-ui.html`
 
 ---
 
@@ -20,11 +30,16 @@
 
 ```
 todo-app/
-├── backend/       # Spring Boot API 서버
-├── frontend/      # React 18 SPA
-├── skills/        # 작업별 가이드 문서
-└── sql/
-    └── migrations/  # DB 마이그레이션 SQL
+├── backend/          # Spring Boot REST API 서버
+├── frontend/         # React 18 SPA
+├── skills/           # 작업별 가이드 문서
+│   ├── backend/      # api, auth, domain, swagger, exception, overview
+│   ├── frontend/     # api-client, auth, store, components, routing, overview
+│   └── db/           # schema, migration, supabase, overview
+├── sql/
+│   └── migrations/   # DB 마이그레이션 SQL
+├── start.sh          # 백엔드 + 프론트엔드 동시 실행
+└── stop.sh           # 서비스 종료
 ```
 
 ---
@@ -33,129 +48,133 @@ todo-app/
 
 ### 사전 준비
 
-- Java 17+
+- Java 22+
 - Node.js 18+
-- Supabase 프로젝트 (URL, service_role 키, anon 키)
+- Supabase 프로젝트 (URL, service_role 키, anon 키, JWT Secret)
 
 ### 1. DB 설정
 
 Supabase Dashboard → SQL Editor에서 실행:
 
-```sql
--- sql/migrations/001_create_todos.sql
-CREATE TABLE todos (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title       VARCHAR(255) NOT NULL,
-  completed   BOOLEAN NOT NULL DEFAULT false,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+```bash
+# sql/migrations/ 의 파일을 순서대로 실행
+sql/migrations/001_create_todos.sql
 ```
 
-### 2. 백엔드 환경변수 설정
+### 2. 백엔드 환경변수
 
-`backend/.env.example`을 복사해 `backend/.env` 생성:
+`backend/.env.example` → `backend/.env` 복사 후 값 입력:
 
 ```env
 SUPABASE_URL=https://<project-ref>.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=<service_role JWT>
+SUPABASE_SERVICE_ROLE_KEY=<service_role JWT>   # RLS 우회용 — anon key 혼용 금지
 SUPABASE_ANON_KEY=<anon JWT>
+SUPABASE_JWT_SECRET=<base64-encoded JWT secret>
 ```
 
-> `service_role` 키는 RLS를 우회하므로 **백엔드 서버 전용**으로 사용
+### 3. 프론트엔드 환경변수
 
-### 3. 프론트엔드 환경변수 설정
-
-`frontend/.env.example`을 복사해 `frontend/.env` 생성:
+`frontend/.env.example` → `frontend/.env` 복사 후 값 입력:
 
 ```env
 VITE_API_URL=http://localhost:8080
+VITE_SUPABASE_URL=https://<project-ref>.supabase.co
 ```
 
 ### 4. 실행
 
-**백엔드**
-
 ```bash
-cd backend
-set -a && source .env && set +a
-./gradlew bootRun      # http://localhost:8080
-```
+# 전체 동시 실행
+./start.sh
 
-**프론트엔드**
-
-```bash
-cd frontend
-npm install
-npm run dev            # http://localhost:5173
+# 개별 실행
+cd backend && set -a && source .env && set +a && ./gradlew bootRun   # http://localhost:8080
+cd frontend && npm install && npm run dev                             # http://localhost:5173
 ```
 
 ---
 
 ## API 엔드포인트
 
-| 메서드 | 경로 | 설명 |
-|--------|------|------|
-| GET | `/api/v1/todos` | 전체 목록 조회 |
-| GET | `/api/v1/todos/{id}` | 단건 조회 |
-| POST | `/api/v1/todos` | 생성 (body: `{ title }`) |
-| PATCH | `/api/v1/todos/{id}` | 수정 (body: `{ title?, completed? }`) |
-| DELETE | `/api/v1/todos/{id}` | 삭제 |
+| 메서드 | 경로 | 설명 | 인증 |
+|--------|------|------|------|
+| POST | `/api/v1/auth/signup` | 회원가입 | 불필요 |
+| POST | `/api/v1/auth/login` | 로그인 | 불필요 |
+| GET | `/api/v1/todos` | 전체 목록 | 필요 |
+| GET | `/api/v1/todos/{id}` | 단건 조회 | 필요 |
+| POST | `/api/v1/todos` | 생성 | 필요 |
+| PATCH | `/api/v1/todos/{id}` | 수정 | 필요 |
+| DELETE | `/api/v1/todos/{id}` | 삭제 | 필요 |
 
 **공통 응답 포맷**
 
 ```json
-{ "success": true, "data": { ... }, "message": "요청 성공" }
-{ "success": false, "data": null, "message": "오류 메시지" }
+{ "success": true,  "data": { ... }, "message": "요청 성공" }
+{ "success": false, "data": null,    "message": "오류 메시지" }
 ```
 
 ---
 
-## 주요 기능
+## 인증 구조
 
-- 할 일 추가 / 조회
-- 체크박스로 완료 상태 토글
-- 인라인 수정 (수정 버튼 → 입력창 → `Enter` 저장 / `Escape` 취소)
-- 삭제
+### JWT 검증 (AuthInterceptor)
+Supabase 발급 JWT는 **ES256** 알고리즘으로 서명된다.
+백엔드 `AuthInterceptor`는 JWKS 공개키(ES256)와 JWT Secret(HS256) 두 가지 방식을 모두 지원한다.
+
+### 소셜 로그인 흐름
+```
+1. 로그인 버튼 클릭 → {SUPABASE_URL}/auth/v1/authorize?provider=kakao
+2. OAuth 인증 완료 → http://localhost:5173/#access_token=xxx
+3. 프론트엔드: URL 해시 파싱 → localStorage 저장 → 자동 로그인
+```
 
 ---
 
-## 백엔드 구조 ([CLAUDE.md](backend/CLAUDE.md))
+## 백엔드 구조
 
 ```
 src/main/java/com/example/todoapp/
 ├── global/
-│   ├── common/ApiResponse.java          # 공통 응답 래퍼
-│   ├── config/SupabaseConfig.java        # RestTemplate Bean (Apache HttpClient 5)
-│   ├── config/SupabaseProperties.java    # Supabase 설정 바인딩
+│   ├── common/ApiResponse.java           # 공통 응답 래퍼
+│   ├── config/
+│   │   ├── SupabaseConfig.java           # RestTemplate Bean (Apache HttpClient 5)
+│   │   ├── SupabaseProperties.java       # 환경변수 바인딩
+│   │   ├── WebMvcConfig.java             # AuthInterceptor 등록
+│   │   └── OpenApiConfig.java            # Swagger Bearer JWT 설정
+│   ├── interceptor/AuthInterceptor.java  # ES256/HS256 JWT 검증
 │   └── exception/GlobalExceptionHandler.java
-└── domain/todo/
-    ├── entity/Todo.java                  # Supabase 응답 역직렬화 record
-    ├── dto/                              # Request / Response DTO
-    ├── service/TodoService.java          # Supabase REST API 호출
-    └── controller/TodoController.java
+├── domain/auth/                          # 회원가입 / 로그인 API
+└── domain/todo/                          # Todo CRUD API
 ```
-
-> `RestTemplate`은 `HttpComponentsClientHttpRequestFactory` 기반으로 생성한다.
-> 기본 `HttpURLConnection`은 PATCH를 지원하지 않는다.
 
 ---
 
-## 프론트엔드 구조 ([CLAUDE.md](frontend/CLAUDE.md))
+## 프론트엔드 구조
 
 ```
 src/
-├── api/client.ts        # Axios 인스턴스 (인터셉터 포함)
-├── api/todo.ts          # Todo API 함수
-├── store/todoStore.ts   # Zustand 스토어
-├── types/todo.ts        # TypeScript 타입
-├── pages/TodoPage.tsx   # 메인 페이지
+├── api/generatedClient.ts    # JWT 인터셉터 + 401 처리
+├── generated/                # ← npm run generate 자동 생성 (gitignore)
+│   ├── sdk.gen.ts            # API 호출 함수 (getAll, create, update ...)
+│   └── types.gen.ts          # API 타입 정의
+├── store/
+│   ├── todoStore.ts          # Todo 상태 관리
+│   └── authStore.ts          # 인증 상태 + 소셜 로그인
+├── pages/
+│   ├── TodoPage.tsx          # 메인 화면
+│   ├── LoginPage.tsx         # 소셜 로그인 버튼 포함
+│   └── RegisterPage.tsx      # 이메일 회원가입
 └── components/
-    ├── TodoForm.tsx     # 할 일 입력 폼
-    └── TodoItem.tsx     # 항목 컴포넌트 (편집 모드 포함)
+    ├── TodoForm.tsx
+    └── TodoItem.tsx          # 인라인 편집 지원
 ```
 
-> Vite 프록시: `/api` → `http://localhost:8080` (개발 시 CORS 불필요)
+**OpenAPI 클라이언트 재생성** (백엔드 API 변경 시):
+
+```bash
+curl http://localhost:8080/v3/api-docs -o frontend/openapi.json
+cd frontend && npm run generate
+```
 
 ---
 
