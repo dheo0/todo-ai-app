@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { todoApi } from '@/api/todo'
+import { getAll, create as createTodo, update as updateTodo, delete_ as deleteTodo } from '@/generated/sdk.gen'
 import type { Todo } from '@/types/todo'
 
 interface TodoStore {
@@ -18,31 +18,34 @@ export const useTodoStore = create<TodoStore>((set) => ({
 
   fetchTodos: async () => {
     set({ isLoading: true })
-    const res = await todoApi.getAll()
-    set({ todos: res.data.data, isLoading: false })
+    const res = await getAll()
+    set({ todos: (res.data?.data ?? []) as unknown as Todo[], isLoading: false })
   },
 
   addTodo: async (title) => {
-    const res = await todoApi.create({ title })
-    set((state) => ({ todos: [...state.todos, res.data.data] }))
+    const res = await createTodo({ body: { title } })
+    const todo = res.data?.data as unknown as Todo
+    if (todo) set((state) => ({ todos: [...state.todos, todo] }))
   },
 
   toggleTodo: async (id, completed) => {
-    const res = await todoApi.update(id, { completed: !completed })
-    set((state) => ({
-      todos: state.todos.map((t) => (t.id === id ? res.data.data : t)),
+    const res = await updateTodo({ path: { id }, body: { completed: !completed } })
+    const todo = res.data?.data as unknown as Todo
+    if (todo) set((state) => ({
+      todos: state.todos.map((t) => (t.id === id ? todo : t)),
     }))
   },
 
   editTodo: async (id, title) => {
-    const res = await todoApi.update(id, { title })
-    set((state) => ({
-      todos: state.todos.map((t) => (t.id === id ? res.data.data : t)),
+    const res = await updateTodo({ path: { id }, body: { title } })
+    const todo = res.data?.data as unknown as Todo
+    if (todo) set((state) => ({
+      todos: state.todos.map((t) => (t.id === id ? todo : t)),
     }))
   },
 
   deleteTodo: async (id) => {
-    await todoApi.delete(id)
+    await deleteTodo({ path: { id } })
     set((state) => ({ todos: state.todos.filter((t) => t.id !== id) }))
   },
 }))

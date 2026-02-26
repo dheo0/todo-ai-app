@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { authApi } from '@/api/auth'
+import { login as loginApi, signup as signupApi } from '@/generated/sdk.gen'
 import type { AuthResponse, LoginRequest, SignupRequest, SocialProvider } from '@/types/auth'
 
 interface AuthStore {
@@ -52,24 +52,26 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isAuthenticated: !!(initialToken && initialUserId && initialEmail),
 
   signup: async (body) => {
-    const res = await authApi.signup(body)
-    const data = res.data.data
-    if (!data.needsEmailConfirmation && data.accessToken && data.userId) {
+    const res = await signupApi({ body })
+    const data = res.data?.data
+    if (data && !data.needsEmailConfirmation && data.accessToken && data.userId) {
       localStorage.setItem('accessToken', data.accessToken)
       localStorage.setItem('userId', data.userId)
-      localStorage.setItem('email', data.email)
-      set({ userId: data.userId, email: data.email, isAuthenticated: true })
+      localStorage.setItem('email', data.email ?? '')
+      set({ userId: data.userId, email: data.email ?? null, isAuthenticated: true })
     }
-    return data
+    return data as unknown as AuthResponse
   },
 
   login: async (body) => {
-    const res = await authApi.login(body)
-    const { accessToken, userId, email } = res.data.data
-    localStorage.setItem('accessToken', accessToken!)
-    localStorage.setItem('userId', userId!)
-    localStorage.setItem('email', email)
-    set({ userId, email, isAuthenticated: true })
+    const res = await loginApi({ body })
+    const data = res.data?.data
+    if (data?.accessToken && data?.userId) {
+      localStorage.setItem('accessToken', data.accessToken)
+      localStorage.setItem('userId', data.userId)
+      localStorage.setItem('email', data.email ?? '')
+      set({ userId: data.userId, email: data.email ?? null, isAuthenticated: true })
+    }
   },
 
   logout: () => {
